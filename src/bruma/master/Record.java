@@ -388,7 +388,7 @@ public class Record implements Iterable<Field> {
      *  Get the number of occurrences of a field.
      * @param tag field tag
      * @return the number of occurrences of a field
-     * @throws org.bruma.BrumaException
+     * @exception  BrumaException
      */
     public int getFieldOccs(final int tag) throws BrumaException {
         if (tag <= 0) {
@@ -1124,10 +1124,10 @@ public class Record implements Iterable<Field> {
     /**
      *  Displays the record with the following pseudo xml format:
      *  &gt;record mfn='mfn' nvf='nvf' status='status'&lt;
-     *    &gt;tag>&lt;field content&gt;/tag&lt;
-     *    &gt;tag>&lt;field content&gt;/tag&lt;
-     *    &gt;tag>&lt;field content&gt;/tag&lt;
-     *  </record>
+     *    &gt;tag&lt;field content&gt;/tag&lt;
+     *    &gt;tag&lt;field content&gt;/tag&lt;
+     *    &gt;tag&lt;field content&gt;/tag&lt;
+     *  &gt;/record&lt;
      *
      * @return  the record in XML format.
      */

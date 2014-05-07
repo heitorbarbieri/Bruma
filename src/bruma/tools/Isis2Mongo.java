@@ -75,36 +75,36 @@ public class Isis2Mongo {
         boolean useOnlyFDT = false;
         boolean clearCollection = false;
 
-        for (int par = 0; par < args.length; par++) {
-            if (args[par].startsWith("-isisMaster=")) {
-                isisMaster = args[par].substring(12);
-            } else if (args[par].startsWith("-mongoDbName=")) {
-                mongoDbName = args[par].substring(13);
-            } else if (args[par].startsWith("-collection=")) {
-                mongoCollection = args[par].substring(12);
-            } else if (args[par].startsWith("-mongoHost=")) {
-                host = args[par].substring(11);
-            } else if (args[par].startsWith("-mongoPort=")) {
-                port = Integer.parseInt(args[par].substring(11));
-            } else if (args[par].startsWith("-user=")) {
-                user = args[par].substring(6);
-            } else if (args[par].startsWith("-password=")) {
-                password = args[par].substring(10);
-            } else if (args[par].startsWith("-encod=")) {
-                encoding = args[par].substring(7);
-            } else if (args[par].startsWith("-from=")) {
-                from = Integer.parseInt(args[par].substring(6));
-            } else if (args[par].startsWith("-to=")) {
-                to = Integer.parseInt(args[par].substring(4));
-            } else if (args[par].startsWith("-idTag=")) {
-                idTag = Integer.parseInt(args[par].substring(7));
-            } else if (args[par].startsWith("-tell=")) {
-                tell = Integer.parseInt(args[par].substring(6));
-            } else if (args[par].equals("--useFDT")) {
+        for (String arg : args) {
+            if (arg.startsWith("-isisMaster=")) {
+                isisMaster = arg.substring(12);
+            } else if (arg.startsWith("-mongoDbName=")) {
+                mongoDbName = arg.substring(13);
+            } else if (arg.startsWith("-collection=")) {
+                mongoCollection = arg.substring(12);
+            } else if (arg.startsWith("-mongoHost=")) {
+                host = arg.substring(11);
+            } else if (arg.startsWith("-mongoPort=")) {
+                port = Integer.parseInt(arg.substring(11));
+            } else if (arg.startsWith("-user=")) {
+                user = arg.substring(6);
+            } else if (arg.startsWith("-password=")) {
+                password = arg.substring(10);
+            } else if (arg.startsWith("-encod=")) {
+                encoding = arg.substring(7);
+            } else if (arg.startsWith("-from=")) {
+                from = Integer.parseInt(arg.substring(6));
+            } else if (arg.startsWith("-to=")) {
+                to = Integer.parseInt(arg.substring(4));
+            } else if (arg.startsWith("-idTag=")) {
+                idTag = Integer.parseInt(arg.substring(7));
+            } else if (arg.startsWith("-tell=")) {
+                tell = Integer.parseInt(arg.substring(6));
+            } else if (arg.equals("--useFDT")) {
                 useFDT = true;
-            } else if (args[par].equals("--useOnlyFDT")) {
+            } else if (arg.equals("--useOnlyFDT")) {
                 useOnlyFDT = true;
-            } else if (args[par].equals("--clearCollection")) {
+            } else if (arg.equals("--clearCollection")) {
                 clearCollection = true;
             } else {
                 usage();
@@ -180,7 +180,7 @@ public class Isis2Mongo {
                                   final String user,
                                   final String password,
                                   final String mongoDb) throws IOException {
-        final Mongo mongo = new Mongo(host, port);
+        final MongoClient mongo = new MongoClient(host, port);
         final DB db = mongo.getDB(mongoDb);
 
         if (user != null) {

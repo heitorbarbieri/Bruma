@@ -56,6 +56,21 @@ public class Field implements Iterable<Subfield>, Comparable<Field> {
         this.content = content.toString();
         subfields = null;
     }
+    
+    public Field(final int tag,
+                 final List<Subfield> subfields) throws BrumaException {
+        if ((tag <= 0) || (tag > 99999)) {
+            throw new BrumaException("Field/tag[" + tag
+                                + "] parameter out of range[1, 99999]");
+        }
+        if (subfields == null) {
+            throw new BrumaException("Field/null content");
+        }
+        this.tag = tag;
+        this.tagStr = null;
+        this.content = null;
+        this.subfields = subfields;
+    }
 
     public Field(final CharSequence tagStr,
                  final CharSequence content) throws BrumaException {
@@ -72,8 +87,8 @@ public class Field implements Iterable<Subfield>, Comparable<Field> {
     }
     
     public Field(final int tag,
-                  final CharSequence tagStr,
-                  final CharSequence content) throws BrumaException {
+                 final CharSequence tagStr,
+                 final CharSequence content) throws BrumaException {
         if (((tag <= 0) || (tag > 32767)) && (tagStr == null)) {
             throw new BrumaException("Field/tag[" + tag
                                 + "] parameter out of range[1, 32767]");
@@ -144,6 +159,18 @@ public class Field implements Iterable<Subfield>, Comparable<Field> {
         return ret;
     }
 
+    /**
+     * Add a subfield to this field
+     * @param sub subfield to be added
+     * @throws BrumaException 
+     */
+    public void addSubfield(final Subfield sub) throws BrumaException {
+        if (sub == null) {
+            throw new BrumaException("null subfield");
+        }
+        subfields.add(sub);
+    }
+    
     /**
      * Get a list of subfields.
      * @return a list of subfields.

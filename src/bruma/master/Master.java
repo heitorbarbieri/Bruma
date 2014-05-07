@@ -116,7 +116,7 @@ public class Master implements MasterInterface {
     /**
      * The constructor of the Master class returned by the MasterFactory object.
      * @param mpi internal information about the database to be opened or created.
-     * @throws BrumaException
+     * @exception BrumaException
      */
     Master(final MasterPlatformInfo mpi) throws BrumaException {
         assert mpi != null;
@@ -186,7 +186,7 @@ public class Master implements MasterInterface {
      * Checks if an Isis database exists.
      * @param dbName the database name.
      * @return true if the database exists or false if not.
-     * @throws BrumaException
+     * @exception BrumaException
      */
     public static boolean exists(final String dbName) throws BrumaException {
         boolean ret = false;
@@ -215,7 +215,7 @@ public class Master implements MasterInterface {
     /**
      * Opens an existing Isis database.
      * @return this Master object
-     * @throws BrumaException
+     * @exception BrumaException
      */
     Master open() throws BrumaException {
         assert info != null;
@@ -329,7 +329,7 @@ public class Master implements MasterInterface {
     /**
      * Creates a new Isis database.
      * @return this Master object
-     * @throws BrumaException
+     * @exception BrumaException
      */
     Master create() throws BrumaException {
         try {
@@ -390,7 +390,7 @@ public class Master implements MasterInterface {
     /**
      * Deletes Isis master files (mst and xrf)
      * @return true if all files were deleted, false otherwise.
-     * @throws BrumaException
+     * @exception BrumaException
      */
     @Override
     public boolean delete() throws BrumaException {
@@ -509,7 +509,7 @@ public class Master implements MasterInterface {
 
     /**
      * Closes frees all database used resources.
-     * @throws BrumaException
+     * @exception BrumaException
      */
     @Override
     public void close() throws BrumaException {
@@ -617,7 +617,7 @@ public class Master implements MasterInterface {
     /**
      * Resets the EWL and DEL flags, even if the caller doesnt have the unlock
      * right.
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public void unlock() throws BrumaException {
@@ -633,7 +633,7 @@ public class Master implements MasterInterface {
     /**
      * Reads the master control record.
      * @return the control record object
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public Control getControlRecord() throws BrumaException {
@@ -707,7 +707,7 @@ public class Master implements MasterInterface {
      * @param mfn
      * @param recLock
      * @return the locked record.
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public Record getLockRecord(final int mfn,
@@ -740,7 +740,7 @@ public class Master implements MasterInterface {
      * Reads a record from the database.
      * @param mfn record master file number
      * @return the readen record.
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public Record getRecord(final int mfn) throws BrumaException {
@@ -847,7 +847,7 @@ public class Master implements MasterInterface {
     /**
      * Forces the unlock of a Isis record.
      * @param recLock - the lock token
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public void unlockRecord(final Lock.RecordLock recLock)
@@ -867,7 +867,7 @@ public class Master implements MasterInterface {
     /**
      * Forces the unlock of a Isis record.
      * @param mfn - record number to unlock
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public void forceUnlockRecord(final int mfn) throws BrumaException {
@@ -1054,7 +1054,7 @@ public class Master implements MasterInterface {
             filepos = ((long)(block - 1) * MF_BLOCKSIZE) + offset;
             assert filepos > 0 : "filepos=" + filepos;
 //System.out.println("recLen=" + recLen + " filepos=" + filepos);
-            // Ajusta buffer
+            // Ajusta buffer 
             bBuffer.rewind();
 
             // Bloqueia registro
@@ -1163,12 +1163,12 @@ public class Master implements MasterInterface {
                 sl = lock.lockSegment(0, CONTROL_SIZE, false);
             }
             final Control ctl = getControlRecord();
-            final int mfn = ctl.getNxtmfn();
+            int mfn = ctl.getNxtmfn();
 
             for (int counter = 0; counter < recNum; counter++) {
                 xrf.writeXrfInfo(
                        xrf.new XrfInfo(mfn, -1, 0, Record.Status.PHYDEL, null));
-                ctl.setNxtmfn(mfn + 1);
+                ctl.setNxtmfn(++mfn);
             }
             writeControlRecord(ctl);
         } finally {
@@ -1219,6 +1219,83 @@ public class Master implements MasterInterface {
     }
 
     private int updateRecord(final Control ctl,
+                             final Record record,
+                             final boolean allowDeleted) throws BrumaException {
+        assert (ctl != null) : "updateRecord/null control";
+        assert (record != null) : "updateRecord/null record";
+
+        final Record.Status status[] = new Record.Status[1];
+        final Record.ActiveStatus actStatus[] = new Record.ActiveStatus[1];
+        final int mfn = record.getMfn();
+        final int nxtmfn = ctl.getNxtmfn();
+        final long fpos = getMasterPosition(mfn, status, actStatus);
+        boolean logDel = false;
+        boolean phyDel = false;
+
+        // Atualização de registro já apagado.
+        if (status[0] != Record.Status.ACTIVE) {
+            if (allowDeleted) {
+                if (status[0] == Record.Status.PHYDEL) {
+                    phyDel = true;
+                } else {
+                    logDel = true;
+                }
+            } else {
+                throw new BrumaException("updateRecord/record is deleted");
+            }            
+        }
+
+        final int bl = (int)((fpos / XrfFile.XRF_BLOCKSIZE) + 1);
+        final int pos = (int)(fpos % XrfFile.XRF_BLOCKSIZE);
+        final Leader leader = (phyDel ? new Leader() : readLeader(fpos));
+        boolean wasNew = false;
+
+        // Aponta para onde estava apontando a versao anterior.
+        if (phyDel) {
+            record.setBlockNumber(0);
+            record.setBlockPos(0);
+        } else {
+            record.setBlockNumber(leader.getMfbwb());
+            record.setBlockPos(leader.getMfbwp());
+        }
+
+        if (record.getStatus() == Record.Status.ACTIVE) {
+            if (phyDel) {
+                record.setActiveStatus(Record.ActiveStatus.NEW);
+                wasNew = true;
+            } else if (actStatus[0] == Record.ActiveStatus.PENDING) {
+                record.setActiveStatus(Record.ActiveStatus.PENDING);
+            } else if (actStatus[0] == Record.ActiveStatus.NEW) {
+                record.setActiveStatus(Record.ActiveStatus.NEW);
+                wasNew = true;
+            } else { // NORMAL
+                record.setActiveStatus(Record.ActiveStatus.PENDING);
+            }
+        } else if (actStatus[0] == Record.ActiveStatus.NEW) {
+            wasNew = true;
+        }
+        
+        if (phyDel) { // Grava no final do arquivo master.
+            writeRecord(ctl, record, ctl.getNxtmfb(),
+                                                  ctl.getNxtmfp() - 1, wasNew);
+        } else if (mfn == nxtmfn-1) { // Ultimo registro da base.
+            // Grava no mesmo local da versao anterior do registro.
+            writeRecord(ctl, record, bl, pos, wasNew);
+        } else if (leader.getMfrl() < record.getRecordLength(encoding, FFI)) {
+            // Grava no final do arquivo master.
+//System.out.println("grava no final");
+            writeRecord(ctl, record, ctl.getNxtmfb(),
+                                                  ctl.getNxtmfp() - 1, wasNew);
+        } else { // Grava no mesmo local da versao anterior do registro.
+//System.out.println("grava no mesmo local");
+            writeRecord(ctl, record, bl, pos, wasNew);
+        }
+
+        return mfn;
+    }
+
+    /*    
+    private int updateRecord(final Control ctl,
                              final Record record) throws BrumaException {
         assert (ctl != null) : "updateRecord/null control";
         assert (record != null) : "updateRecord/null record";
@@ -1231,7 +1308,8 @@ public class Master implements MasterInterface {
 
         // Atualização de registro já apagado.
         if (status[0] != Record.Status.ACTIVE) {
-            throw new BrumaException("updateRecord/record is deleted");
+            //throw new BrumaException("updateRecord/record is deleted");
+            int x = 0;
         }
 
         final int bl = (int)((fpos / XrfFile.XRF_BLOCKSIZE) + 1);
@@ -1270,8 +1348,9 @@ public class Master implements MasterInterface {
         }
 
         return mfn;
-    }
-
+    }    
+    */
+    
     private int adjustFilePos(final int fpos) {
         assert fpos > 0;
 
@@ -1295,7 +1374,7 @@ public class Master implements MasterInterface {
     /**
      * Writes a record into a database.
      * @param record Isis record
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      * @return record master file number
      */
     @Override
@@ -1349,7 +1428,7 @@ public class Master implements MasterInterface {
                     recLock = lock.lockRecord(mfn);
                     rl = true;
                 }
-                mfn = updateRecord(ctl, record);
+                mfn = updateRecord(ctl, record, true);
             }
         } finally {
             if (lock != null) {
@@ -1370,7 +1449,7 @@ public class Master implements MasterInterface {
     /**
      * Deletes an Isis record.
      * @param mfn - master file number of the record.
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public void deleteRecord(final int mfn) throws BrumaException {
@@ -1448,7 +1527,7 @@ public class Master implements MasterInterface {
     /**
      * Creates a new empty record.
      * @return Isis record
-     * @throws org.bruma.BrumaException
+     * @exception BrumaException
      */
     @Override
     public Record newRecord() throws BrumaException {
@@ -1458,7 +1537,6 @@ public class Master implements MasterInterface {
     /**
      * Sets a map of tags and its names
      * @param tags tags and tags names association
-     * @return this record
      */
     public void setTags(final Map<Integer,String> tags) {
         this.tags = tags;
