@@ -31,7 +31,7 @@ import bruma.master.Record;
  */
 public class JSONMasterExport extends AbstractMasterExport {
     private boolean first;
-    private int idTag;
+    private final int idTag;
 
     public JSONMasterExport(final Master mst,
                             final String outFile,
@@ -61,9 +61,9 @@ public class JSONMasterExport extends AbstractMasterExport {
         
         if (first) {
             first = false;            
-            ret = rec.toJSON3(idTag);
+            ret = rec.toJSON3(idTag, null);
         } else {
-            ret = ",\n" + rec.toJSON3(idTag);
+            ret = ",\n" + rec.toJSON3(idTag, null);
         }
         
         return ret;

@@ -83,7 +83,7 @@ public class DumpDb {
                 } else {
                     System.out.println(",");
                 }
-                System.out.print(rec.toJSON3(0));
+                System.out.print(rec.toJSON3(0, null));
             }
         }
         System.out.println();

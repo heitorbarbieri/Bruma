@@ -82,17 +82,10 @@ public class Subfield implements Comparable<Subfield> {
         return this.getId() - other.getId();
     }
     
-    public String toJSON() {
-        final String ret;
+    public String toJSON() {        
         final String subContent = content.replace("\"", "\\\"");
-
-        if (id == FIRST_SUB_ID) {
-            ret = "          { \"id\": \"*\", \"content\": \""
+        final String ret = "          { \"id\": \"" + id + "\" \"content\":  \""
                                                          + subContent + "\" }";
-        } else {
-            ret = "          { \"id\": \"" + id + "\" \"content\":  \""
-                                                         + subContent + "\" }";
-        }
         return ret;
     }
     
@@ -103,13 +96,9 @@ public class Subfield implements Comparable<Subfield> {
 
         final String subContent = content.replace("\"", "\\\"");
 
-        if (id == FIRST_SUB_ID) {
-            in.append("          { \"id\": \"*\", \"content\": \"");
-        } else {
-            in.append("          { \"id\": \"");
-            in.append(id);
-            in.append("\", \"content\":  \"");
-        }
+        in.append("          { \"id\": \"");
+        in.append(id);
+        in.append("\", \"content\":  \"");
         in.append(subContent);
         in.append("\" }");
     }

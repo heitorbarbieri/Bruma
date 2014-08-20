@@ -22,10 +22,19 @@
 package bruma.tools;
 
 import bruma.BrumaException;
-import bruma.master.*;
+import bruma.master.Field;
+import bruma.master.Master;
+import bruma.master.MasterFactory;
+import bruma.master.Record;
+import bruma.master.Subfield;
 import bruma.utils.Util;
 import bruma.utils.ZeFDT;
-import com.mongodb.*;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;

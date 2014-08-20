@@ -1229,7 +1229,6 @@ public class Master implements MasterInterface {
         final int mfn = record.getMfn();
         final int nxtmfn = ctl.getNxtmfn();
         final long fpos = getMasterPosition(mfn, status, actStatus);
-        boolean logDel = false;
         boolean phyDel = false;
 
         // Atualização de registro já apagado.
@@ -1237,8 +1236,6 @@ public class Master implements MasterInterface {
             if (allowDeleted) {
                 if (status[0] == Record.Status.PHYDEL) {
                     phyDel = true;
-                } else {
-                    logDel = true;
                 }
             } else {
                 throw new BrumaException("updateRecord/record is deleted");

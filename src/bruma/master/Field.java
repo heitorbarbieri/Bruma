@@ -200,7 +200,7 @@ public class Field implements Iterable<Subfield>, Comparable<Field> {
         return subfields;
     }
 
-     /**
+    /**
      * Get a list of subfields.
      * @param id the subfield identifier
      * @return a list of subfields.

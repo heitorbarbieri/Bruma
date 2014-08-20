@@ -1180,7 +1180,7 @@ public class Record implements Iterable<Field> {
 
         builder.append("{\n  \"mfn\" : \"");
         builder.append(mfn);
-        builder.append("\",\n  \"_nvf\" : ");
+        builder.append("\",\n  \"nvf\" : ");
         builder.append(getNvf());
         builder.append("");
 
@@ -1246,7 +1246,7 @@ public class Record implements Iterable<Field> {
 
         builder.append("{\n  \"mfn\" : \"");
         builder.append(mfn);
-        builder.append("\",\n  \"_nvf\" : ");
+        builder.append("\",\n  \"nvf\" : ");
         builder.append(getNvf());
         builder.append(",\n  \"fields\" : [");
 
@@ -1280,7 +1280,9 @@ public class Record implements Iterable<Field> {
         return builder.toString();
     }
 
-    public String toJSON3(final int idTag) throws BrumaException {
+    public String toJSON3(final int idTag,
+                          final Map<Integer,String> tagsMap) 
+                                                         throws BrumaException {
         final StringBuilder builder = new StringBuilder();
         final Map<Integer, List<Field>> flds =
                                         new TreeMap<Integer,List<Field>> ();
@@ -1308,7 +1310,7 @@ public class Record implements Iterable<Field> {
 
         builder.append("  {\n    \"_id\" : \"");
         builder.append(Integer.toString(rtag));
-        builder.append("\",\n    \"_nvf\" : ");
+        builder.append("\",\n    \"nvf\" : ");
         builder.append(getNvf());
         //builder.append("\"");
 
@@ -1334,8 +1336,15 @@ public class Record implements Iterable<Field> {
             }
             builder.append("\n    ");
             if (stag == null) {
-                builder.append("\"v");
-                builder.append(itag);
+                final String mtag = (tagsMap == null) ? null 
+                                                      : tagsMap.get(itag);
+                if (mtag == null) {
+                    builder.append("\"v");
+                    builder.append(itag);
+                } else {
+                     builder.append("\"");
+                     builder.append(mtag);
+                }
             } else {
                 builder.append("\"");
                 builder.append(stag);
@@ -1408,5 +1417,5 @@ public class Record implements Iterable<Field> {
         builder.append("\n  }");
 
         return builder.toString();
-    }
+    }    
 }
