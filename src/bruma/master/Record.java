@@ -1280,16 +1280,20 @@ public class Record implements Iterable<Field> {
         return builder.toString();
     }
 
+    public String toJSON3() throws BrumaException {
+        return toJSON3(-1, null);
+    }
+    
     public String toJSON3(final int idTag,
-                          final Map<Integer,String> tagsMap) 
+                          final Map<String,String> tagsMap) 
                                                          throws BrumaException {
         final StringBuilder builder = new StringBuilder();
         final Map<Integer, List<Field>> flds =
                                         new TreeMap<Integer,List<Field>> ();
-        final Map<Character, List<Subfield>> subflds =
-                                        new TreeMap<Character,List<Subfield>>();
+        final Map<String,List<Subfield>> subflds =
+                                        new TreeMap<String,List<Subfield>>();
         List<Field> fldLst;
-        List<Subfield> subFldLst;
+        List<Subfield> subFldLst = null;
         boolean fldFirst;
         boolean subMultiFirst;
         boolean subFirst;
@@ -1308,9 +1312,9 @@ public class Record implements Iterable<Field> {
             }
         }
 
-        builder.append("  {\n    \"_id\" : \"");
+        builder.append("  {\n    \"_id\": \"");
         builder.append(Integer.toString(rtag));
-        builder.append("\",\n    \"nvf\" : ");
+        builder.append("\",\n    \"nvf\": ");
         builder.append(getNvf());
         //builder.append("\"");
 
@@ -1326,7 +1330,7 @@ public class Record implements Iterable<Field> {
         size = flds.size();
 
         for (Map.Entry<Integer,List<Field>> entry : flds.entrySet()) {
-            final Integer itag = entry.getKey();
+            final String itag = entry.getKey().toString();
             //final String stag = tags.get(itag);
             final String stag = entry.getValue().get(0).getIdStr();
             fldLst = entry.getValue();
@@ -1349,69 +1353,91 @@ public class Record implements Iterable<Field> {
                 builder.append("\"");
                 builder.append(stag);
             }
-            builder.append("\" : ");
+            builder.append("\": ");
             if (fldLst.size() > 1) {
-                builder.append("[");
+                builder.append("[ ");
             }
             fldFirst = true;
 
-            for (Field fld : fldLst) {
+            for (Field fld : fldLst) {                
                 if (fldFirst) {
                     fldFirst = false;
                 } else {
-                    builder.append(",");
-                }
-                builder.append("\n      {");
+                    builder.append(", ");
+                }                
                 subflds.clear();
                 for (Subfield sub: fld) {
-                    subFldLst = subflds.get(sub.getId());
-                    if (subFldLst == null) {
+                    final String subTag = Character.toString(sub.getId());
+                    
+                    subFldLst = subflds.get(subTag);
+                    if (subFldLst == null) {                        
+                        final String subId = (tagsMap == null) 
+                                      ? subTag
+                                      : tagsMap.get(itag + "." + subTag); 
                         subFldLst = new ArrayList<Subfield>();
-                        subflds.put(sub.getId(), subFldLst);
+                        
+                        subflds.put((subId == null) ? subTag : subId, subFldLst);
                     }
                     subFldLst.add(sub);
                 }
-                subFirst = true;
-                for (Map.Entry<Character,List<Subfield>> entrys
-                                                         : subflds.entrySet()) {
-                    subFldLst = entrys.getValue();
-                    subMulti = (subFldLst.size() > 1);
-                    subMultiFirst = true;
-
-                    if (subFirst) {
-                        subFirst = false;
+                if ((subflds.size() == 1) && (subFldLst.size() == 1)) {
+                    final Subfield auxsub = subFldLst.get(0);
+                    final char sid = auxsub.getId();
+                    
+                    if (sid == Subfield.FIRST_SUB_ID) {
+                        builder.append("\"");
+                        builder.append(auxsub.getContent());
+                        builder.append("\"");
                     } else {
-                        builder.append(",");
-                    }
-                    builder.append("\n         \"");
-                    builder.append(entrys.getKey());
-                    builder.append("\" : ");
-                    if (subMulti) {
-                        builder.append("[");
-                    }
-                    for (Subfield sub : subFldLst) {
-                        if (subMulti) {
-                            if (subMultiFirst) {
-                                subMultiFirst = false;
-                            } else {
-                                builder.append(", ");
-                            }
-                        }
-                        builder.append("\"");
-                        builder.append(sub.getContent()
-                                          .replace("\\", "\\\\")
-                                          .replace("\"", "\\\""));
-                        builder.append("\"");
-                    }
-                    if (subMulti) {
-                        builder.append("]");
-                    }
-                }
-                builder.append("\n      }");
-            }
+                        builder.append("{ \"");
+                        builder.append(sid);
+                        builder.append("\": \"");
+                        builder.append(auxsub.getContent());
+                        builder.append("\" }");
+                    }                                            
+                } else {
+                    builder.append("{");
+                    subFirst = true;
+                    for (Map.Entry<String,List<Subfield>> entrys
+                                                         : subflds.entrySet()) {
+                        subFldLst = entrys.getValue();
+                        subMulti = (subFldLst.size() > 1);
+                        subMultiFirst = true;
 
+                        if (subFirst) {
+                            subFirst = false;
+                        } else {
+                            builder.append(",");
+                        }
+                        builder.append(" \"");
+                        builder.append(entrys.getKey());
+                        builder.append("\": ");
+                        if (subMulti) {
+                            builder.append("[ ");
+                        }
+                        for (Subfield sub : subFldLst) {
+                            if (subMulti) {
+                                if (subMultiFirst) {
+                                    subMultiFirst = false;
+                                } else {
+                                    builder.append(", ");
+                                }
+                            }
+                            builder.append("\"");
+                            builder.append(sub.getContent()
+                                              .replace("\\", "\\\\")
+                                              .replace("\"", "\\\""));
+                            builder.append("\"");
+                        }
+                        if (subMulti) {
+                            builder.append("]");
+                        }
+                    }
+                    builder.append(" }");
+                }
+            }
             if (fldLst.size() > 1) {
-                builder.append("\n    ]");
+                builder.append(" ]");
             }
         }
         builder.append("\n  }");

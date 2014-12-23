@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -198,6 +199,7 @@ public class Isis2Couch {
         final Map<Integer,String> tags = hasFdt 
                    ? new ZeFDT().fromFile(fdtFileName).getFieldDescriptionMap()
                    : hasConvTable ? parseConvTable(convTable) : null;
+        final Map<String,String> stags;
         final StringBuilder builder = new StringBuilder("{\n");
         final TimeString ts = new TimeString();
         final SendJsonDocuments sender = new SendJsonDocuments(couchHost, 
@@ -205,6 +207,14 @@ public class Isis2Couch {
         boolean first = true;
         int bulkNum = 0;
         
+        if (tags == null) {
+            stags = null;
+        } else {
+            stags = new TreeMap<String,String>();
+            for (Map.Entry<Integer,String> entry : tags.entrySet()) {            
+                stags.put(entry.getKey().toString(), entry.getValue());
+            }
+        }
         builder.append(" \"docs\": [\n");
                 
         ts.start();
@@ -222,7 +232,7 @@ public class Isis2Couch {
                 } else {
                     builder.append(",");
                 }
-                builder.append(rec.toJSON3(idTag, tags));
+                builder.append(rec.toJSON3(idTag, stags));
                 builder.append("\n");
                 if ((builder.length() >= MAX_BUFFER_SIZE) || 
                     (bulkNum >= MAX_BULK_DOCS)) {

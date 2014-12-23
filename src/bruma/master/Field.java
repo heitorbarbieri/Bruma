@@ -290,6 +290,26 @@ public class Field implements Iterable<Subfield>, Comparable<Field> {
         return sb.toString();
     }
 
+    public String toJSON() {
+        final String cont = getContent().replace("\"", "&quot;");
+        final StringBuilder sb = new StringBuilder();
+
+        if (tagStr == null) {
+            sb.append("\"");
+            sb.append(tag);
+            sb.append("\" : \"");
+            sb.append(cont);
+            sb.append("\"");
+        } else {
+            sb.append("\"");
+            sb.append(tagStr);
+            sb.append("\" : \"");
+            sb.append(cont);
+            sb.append("\"");
+        }
+        return sb.toString();
+    }
+    
     @Override
     public String toString() {
         final String cont = getContent();
