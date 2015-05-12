@@ -94,6 +94,9 @@ public class ISO8859OrIBM850 {
         count_rec = 0;
 
         for (Record rec : mst) {
+            if (rec == null) {
+                throw new BrumaException("master possible corrupted");
+            }
             if (rec.getStatus() == Record.Status.ACTIVE) {
                 if (smart) {
                     count_rec++;

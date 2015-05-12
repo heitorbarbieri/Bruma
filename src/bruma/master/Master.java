@@ -32,7 +32,12 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -486,6 +491,9 @@ public class Master implements MasterInterface {
         int recLen;
 
         for (Record rec : this) {
+            if (rec == null) {
+                throw new BrumaException("Master probably corrupted");
+            }
             if (rec.getStatus() == Record.Status.ACTIVE) {
                 recLen = rec.getRecordLength(encoding, FFI);
                 max = Math.max(max, recLen);

@@ -116,7 +116,7 @@ class RecordByteBuffer {
             final int base = (isFFI ? bbuffer.getInt() : bbuffer.getShort());
             final int nvf = bbuffer.getShort();
             final int status = bbuffer.getShort();
-/*System.out.println("isFFI=" + isFFI + " filler=" + filler + " mfn=" + mfn +  " mfrl=" + mfrl
+/*System.out.println("isFFI=" + isFFI + " filler=" + filler + " mfn=" + mfn 
  + " mfbwb=" + mfbwb +  " mfbwp=" + mfbwp +  " base=" + base + " nvf="
  + nvf + " status= " + status);*/
 
@@ -129,7 +129,7 @@ class RecordByteBuffer {
                                                                 + status + "]");
             }
             record.setStatus(recStatus);
-            
+
             for (int counter = 0; counter < nvf; counter++) {
                 final int tag = bbuffer.getShort();
                 if (isFFI && (filler != 0)){
@@ -138,10 +138,11 @@ class RecordByteBuffer {
                 final int pos = (isFFI ? bbuffer.getInt() : bbuffer.getShort());
                 final int len = (isFFI ? bbuffer.getInt() : bbuffer.getShort());
                 final int bpos = base + pos;
-                
+//System.out.println("tag=" + tag + " pos=" + pos + " len=" + len + " bpos=" + bpos + " base=" + base + " bbuffer.limit=" + bbuffer.limit());
                 bbuffer.mark();
-                bbuffer.position(bpos);
                 bbuffer.limit(bpos + len);
+                bbuffer.position(bpos);                
+//System.out.println("tag=" + tag + " base=" + base + " pos=" + pos + " len=" + len + " lendo campo da pos=" + bpos + " ate pos=" + (bpos+len));                
                 record.addField(tag, (tags == null) ? null : tags.get(tag), 
                                                       decoder.decode(bbuffer));
                 bbuffer.reset();
