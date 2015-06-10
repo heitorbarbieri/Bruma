@@ -544,6 +544,26 @@ public class Record implements Iterable<Field> {
     /**
      *  Get all occurrences of a record field.
      *
+     * @param tags desired field tag list.
+     * @return  the record field list.
+     * @exception  BrumaException
+     */
+    public List<Field> getFieldList(final List<Integer> tags) 
+                                                         throws BrumaException {
+        final List<Field> ret = new ArrayList<Field>();
+
+        for (Field field : fields) {            
+            if (tags.contains(field.getId())) {
+                ret.add(field);
+            }
+        }
+                
+        return ret;
+    }
+    
+    /**
+     *  Get all occurrences of a record field.
+     *
      * @param tagStr the field tag string.
      * @return  the record field list.
      * @exception  BrumaException
@@ -1081,6 +1101,42 @@ public class Record implements Iterable<Field> {
 
         return ret;
     }
+    
+    /**
+     * If a regular expression is found in certain fields a list of other fields
+     * will be returned.
+     * @param findWhat regular expression used to verify if these record should 
+     * be used to extract output fields.
+     * @param inFldTags tags of fields where the regular expression will be used
+     * @param outFldTags tags of fields that will be include into the result list
+     * @return a list with the desired fields
+     * @throws BrumaException 
+     */
+    public List<Field> join(final String findWhat,
+                            final List<Integer> inFldTags,
+                            final List<Integer> outFldTags) 
+                                                         throws BrumaException {
+        if (findWhat == null) {
+            throw new NullPointerException("findWhat");
+        }
+        if (inFldTags == null) {
+            throw new NullPointerException("inFldTags");
+        }
+        if (outFldTags == null) {
+            throw new NullPointerException("outFldTags");
+        }
+        
+        final List<Field> ret = new ArrayList<Field>();
+        final Matcher mat = Pattern.compile(findWhat).matcher("");
+        
+        for (Field field : getFieldList(inFldTags)) {
+            mat.reset(field.getContent());
+            if (mat.find()) {
+                ret.addAll(getFieldList(outFldTags));
+            }
+        }
+        return ret;
+    }
 
     /**
      *  Displays the record with the following xml format:
@@ -1380,7 +1436,8 @@ public class Record implements Iterable<Field> {
                     }
                     subFldLst.add(sub);
                 }
-                if ((subflds.size() == 1) && (subFldLst.size() == 1)) {
+                if ((subflds.size() == 1) && (subFldLst != null) 
+                                                   && (subFldLst.size() == 1)) {
                     final Subfield auxsub = subFldLst.get(0);
                     final char sid = auxsub.getId();
                     
