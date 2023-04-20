@@ -24,10 +24,8 @@ package bruma.impexp;
 import bruma.BrumaException;
 import bruma.master.Master;
 import bruma.master.Record;
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 /**
  *
@@ -35,6 +33,78 @@ import java.io.InputStreamReader;
  * @date 07/01/2010
  */
 
+class MyReader {
+    private static final int ISO_LINE_LENGHT = 80;
+
+    private final int lineLength;
+    private final FileInputStream reader;
+
+    private int linePos;
+
+    MyReader(final String fileName) throws IOException {
+        this(fileName, ISO_LINE_LENGHT);
+    }
+
+    MyReader(final String fileName,
+             final int lineLength) throws IOException {
+
+        assert lineLength > 0;
+
+        final String encod = Master.DEFAULT_ENCODING;
+        
+        this.lineLength = ((lineLength > 0) ? lineLength : ISO_LINE_LENGHT);
+        linePos = 0;
+        reader = new FileInputStream(fileName);
+    }
+
+    void close() throws IOException {
+        if (reader != null) {
+            reader.close();
+        }
+    }
+
+    void readBreak() throws IOException {
+        int c = reader.read();
+
+        if (c == '\r') {
+            reader.read(); // read /n
+        }
+        linePos = 0;
+    }
+
+    int read(final byte[] cbuf,
+             final int off,
+             final int len) throws IOException {
+        assert cbuf != null;
+        assert off >= 0 ;
+        assert len > 0;
+
+        int c = 0;
+        int total = 0;
+
+        while (total < len) {
+            if (linePos == lineLength) {
+                readBreak();
+            }
+            if (c == -1) {
+                return total;
+            }
+
+            while ((total < len) && (linePos < lineLength)) {
+                c = reader.read();
+                if (c == -1) { // || (c == '\r') || (c == '\n')) {
+                    return total;
+                }
+                cbuf[total++] = (byte)c;
+                linePos++;
+            }
+        }
+
+        return total;
+    }
+}
+
+/*
 class MyReader {
     private static final int ISO_LINE_LENGHT = 80;
 
@@ -113,12 +183,14 @@ class MyReader {
     }
 }
 
+*/
 
 public class ISO2709I {
     private static final int LEADER_LENGTH = 24;
 
     private final MyReader mr;
-
+    private String encoding;
+    
     private int nvf;
     private int dirEntrySize;
     private boolean eof;
@@ -136,10 +208,10 @@ public class ISO2709I {
     private int forFutureUse;
 
     // Directoy
-    private char[] dir;
+    private byte[] dir;
 
     // Fields
-    private char[] fields;
+    private byte[] fields;
 
     public ISO2709I(final String isoFileName) throws BrumaException {
         this (isoFileName, null);
@@ -152,10 +224,11 @@ public class ISO2709I {
         }
 
         try {
-            mr = new MyReader(isoFileName, encoding);
+            mr = new MyReader(isoFileName);
         } catch(IOException ioe) {
             throw new BrumaException(ioe);
         }
+        this.encoding = (encoding == null) ? Master.DEFAULT_ENCODING : encoding;
         dir = null;
         fields = null;
         nvf = 0;
@@ -173,7 +246,7 @@ public class ISO2709I {
         }
     }
 
-    private int parseInt(final char[] buffer,
+    private int parseInt(final byte[] buffer,
                          final int offset,
                          final int length) throws BrumaException {
         assert buffer != null;
@@ -184,9 +257,9 @@ public class ISO2709I {
         char c;
 
         for (int index = 0; index < length; index++) {
-            c = buffer[offset + index];
+            c = (char)buffer[offset + index];
             if ((c < '0') || (c > '9')) {
-                throw new BrumaException("parseInt/ (c < '0') || (c > '9')");
+                throw new BrumaException("parseInt/ (c < '0') || (c > '9') => c == " + c);
             }
             ret *= 10;
             ret += (c - '0');
@@ -196,7 +269,7 @@ public class ISO2709I {
 
     private void readLeader() throws BrumaException {
         try {
-            final char[] leader = new char[LEADER_LENGTH];
+            final byte[] leader = new byte[LEADER_LENGTH];
             final int len = mr.read(leader, 0, LEADER_LENGTH);
 
             if (len == 0) {
@@ -227,7 +300,7 @@ public class ISO2709I {
             final int dirLength = baseAddressData - LEADER_LENGTH - 1;
 
             if ((dir == null) || (dir.length < dirLength)) {
-                dir = new char[dirLength];
+                dir = new byte[dirLength];
             }
 
             if (mr.read(dir, 0, dirLength) == dirLength) {
@@ -248,7 +321,7 @@ public class ISO2709I {
             int read = 0;
 
             if ((fields == null) || (fields.length < fieldsLength)) {
-                fields = new char[fieldsLength];
+                fields = new byte[fieldsLength];
             }
 
             read = mr.read(fields, 0, fieldsLength);
@@ -281,8 +354,7 @@ public class ISO2709I {
                 dpos = index * dirEntrySize;
                 tag = parseInt(dir, dpos, 3);
                 if ((tag <= 0) || (tag > 9999)) {
-                    throw new BrumaException("readRecord/tag["
-                                                                  + tag + "]");
+                    throw new BrumaException("readRecord/tag[" + tag + "]");
                 }
                 dpos += 3;
                 len = parseInt(dir, dpos, lengthLengthEntryField);
@@ -294,7 +366,11 @@ public class ISO2709I {
                 if (pos < 0) {
                     throw new BrumaException("readRecord/pos < 0");
                 }
-                content = new String(fields, pos + 1, len - 1);
+                try {
+                    content = new String(fields, pos + 1, len - 1, encoding);
+                } catch (IOException ex) {
+                    throw new BrumaException(ex);
+                }
                 record.addField(tag, content);
             }
         }

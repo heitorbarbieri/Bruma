@@ -80,16 +80,17 @@ public class ISO2709RecordIterator extends AbstractRecordIterator {
     }
 
     private static void usage() {
-        System.err.println("usage: ISO2709RecordIterator <dbname>");
+        System.err.println("usage: ISO2709RecordIterator <dbname>  [<encoding>]");
         System.exit(1);
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
+        if (args.length < 1) {
             usage();
         }
 
-        AbstractRecordIterator iterator = new ISO2709RecordIterator(args[0]);
+        final String encoding = (args.length) > 1 ? args[1] : null;
+        AbstractRecordIterator iterator = new ISO2709RecordIterator(args[0], encoding);
 
         for (Record rec : iterator) {
             System.out.println(rec);
